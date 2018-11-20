@@ -2,6 +2,7 @@
 #include <sqlite3.h>
 #include <string>
 #include <ctime>
+#include <list>
 
 #include "db_management.h"
 
@@ -9,6 +10,7 @@
 sqlite3* db_manager::get_connector(){
 		sqlite3* DB;
 		int exit = 0;
+		//exit = sqlite3_open("smart_water.db", &DB);
 		exit = sqlite3_open("db/smart_water.db", &DB);
 		
 		if(exit != SQLITE_OK){
@@ -133,6 +135,31 @@ std::string db_manager::get_current_time(){
 void db_manager::send_data(){
 	//std::cout<<"sending data"<<std::endl;
 	}
+
+//set is_sync true to all water amount whose date is different from locale date 
+//.. this means that they were transfered	
+std::list<water_object> db_manager::get_all_water(){
+	std::list<water_object> waters; //list to contains amount of waters
+	sqlite3_stmt *stmt;
+	sqlite3* DB = get_connector();
+	std::string sql_query = std::string("SELECT * FROM Water ;");
+	
+	int ret_code = 0;
+	ret_code = sqlite3_prepare_v2(DB, sql_query.c_str(), sql_query.length(),&stmt,NULL);
+	if(ret_code == SQLITE_OK){
+		while((ret_code = sqlite3_step(stmt)) == SQLITE_ROW){
+			float water = (float)sqlite3_column_double(stmt,1);
+			const unsigned char* date_char = sqlite3_column_text(stmt,2);
+			std::string date_string = std::string(reinterpret_cast<const char*>(date_char)); //convert const unsigned char* to string
+			int is_sync_ = sqlite3_column_int(stmt,3);
+			water_object w(water, date_string, is_sync_);
+			waters.push_back(w); //add row to the list of elements.
+			}
+		}
+		sqlite3_finalize(stmt);
+		close_connection(DB);
+		return waters;
+	}
 	
 /*int main(int argc, char** argv) 
 { 
@@ -140,7 +167,11 @@ void db_manager::send_data(){
     //std::string date = db_manager::get_current_time();
     //std::cout<<db_manager::get_water_current_date_db()<<std::endl;
     float g = 1;
-    db_manager::update_water_db(g);
- 
+    //db_manager::update_water_db(g);
+	std::list<water_object> list = db_manager::get_all_water();
+	 for(auto it = list.begin(); it != list.end(); ++it) {
+			water_object w = *it;
+			std::cout<<"Water amount"<<w.get_water_amount()<<std::endl;
+		 }
     return (0); 
-}*/ 
+}*/
