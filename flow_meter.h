@@ -3,6 +3,7 @@
 
 #include <wiringPi.h>
 #include <stdint.h>
+#include <string>
 
 
 class flow_meter{
@@ -13,6 +14,11 @@ class flow_meter{
 		volatile uint32_t last_flow_rate_timer; //track time of how long it is been pulsing 
 		volatile float flow_rate; //used to calculate a flow rate
 		float liters; //amount of water drank
+		
+		std::string current_date; 
+		std::string previous_date;
+		
+		std::string get_current_time();
 	public:
 		flow_meter(const unsigned int flow_sensor_pin_);
 		float get_amount_drank();

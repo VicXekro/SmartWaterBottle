@@ -1,5 +1,6 @@
 #include <sqlite3.h>
 #include "water_object.h"
+#include <list>
 
 class db_manager{
 	private:
@@ -19,7 +20,9 @@ class db_manager{
 
 		static std::string get_current_time(); //return current date
 		
-		static void send_data(); //send data in db with is_sync == 0
-		
 		static std::list<water_object> get_all_water(); //return all the water amount saved in database
+		
+		static void set_is_sync(water_object& water_o ); //set is sync to 1 in db
+		
+		static void delete_sync_water();//remove all data that were sync from db
 };

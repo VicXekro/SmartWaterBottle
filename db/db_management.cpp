@@ -10,7 +10,7 @@
 sqlite3* db_manager::get_connector(){
 		sqlite3* DB;
 		int exit = 0;
-		//exit = sqlite3_open("smart_water.db", &DB);
+		//exit = sqlite3_open("../db/smart_water.db", &DB);
 		exit = sqlite3_open("db/smart_water.db", &DB);
 		
 		if(exit != SQLITE_OK){
@@ -94,7 +94,7 @@ float db_manager::get_water_current_date_db(){
 void db_manager::update_water_db(float water_drank, float& previous_water_drank){
 	float db_water = 0;
 	if(is_current_amnt_date_saved()){
-		std::cout<<"in update db method"<<std::endl;
+		//std::cout<<"in update db method"<<std::endl;
 		char* errorM;
 			
 		if(water_drank != previous_water_drank){
@@ -105,7 +105,7 @@ void db_manager::update_water_db(float water_drank, float& previous_water_drank)
 			
 			db_water = (previous_water_drank > db_water)? (previous_water_drank):(previous_water_drank+db_water);
 			
-			std::cout<<"water to be saved: "<<db_water<<std::endl;
+			//std::cout<<"water to be saved: "<<db_water<<std::endl;
 			
 			std::string sql_query = std::string("UPDATE water set water_qt = ")+std::to_string(db_water)+
 						std::string(" WHERE date = '")+get_current_time()+"';";
@@ -115,7 +115,7 @@ void db_manager::update_water_db(float water_drank, float& previous_water_drank)
 			
 			previous_water_drank = water_drank;
 			close_connection(DB);
-			}else{std::cout<<"amount didn't changed"<<std::endl;}
+			}//else{std::cout<<"amount didn't changed"<<std::endl;}
 		}
 	else{
 		save_water_db(water_drank);
@@ -129,17 +129,13 @@ std::string db_manager::get_current_time(){
 	std::string date = std::to_string(1900 + ltm->tm_year)+"-"+std::to_string(1 + ltm->tm_mon)+"-"+std::to_string(ltm->tm_mday);
 	return date;
 	}
-	
-/* send data on the raspberrypi to the mobile application using bluetooth. 
- */
-void db_manager::send_data(){
-	//std::cout<<"sending data"<<std::endl;
-	}
+
 
 //set is_sync true to all water amount whose date is different from locale date 
 //.. this means that they were transfered	
 std::list<water_object> db_manager::get_all_water(){
 	std::list<water_object> waters; //list to contains amount of waters
+	
 	sqlite3_stmt *stmt;
 	sqlite3* DB = get_connector();
 	std::string sql_query = std::string("SELECT * FROM Water ;");
@@ -161,17 +157,56 @@ std::list<water_object> db_manager::get_all_water(){
 		return waters;
 	}
 	
+//set the value of is_sync to 1 in db	
+void db_manager::set_is_sync(water_object& water_o ){
+	char* errorM;
+	do{
+		sqlite3* DB = get_connector();
+		
+		std::string sql_query = std::string("UPDATE water SET is_sync = ")+ std::to_string(1)+ 
+								std::string(" WHERE date = '")+water_o.get_date()+"';";
+		
+		sqlite3_exec(DB, sql_query.c_str(),NULL,0,&errorM);
+		std::cout<<errorM<<std::endl;
+		
+		close_connection(DB);
+		}
+		while(sizeof(errorM)!=0);
+	}
+
+//remove all water that were sync from database
+void db_manager::delete_sync_water(){
+	std::cout<<"Deleting water"<<std::endl;
+	char* errorM;
+	sqlite3* DB = get_connector();
+	
+	 std::list<water_object> list = db_manager::get_all_water();
+	 for(auto it = list.begin(); it != list.end(); ++it) {
+			water_object w = *it;
+			if(w.get_is_sync() == 1){
+				std::string sql_query = std::string("DELETE FROM water WHERE is_sync = ")+ std::to_string(1);
+							
+				sqlite3_exec(DB, sql_query.c_str(),NULL,0,&errorM);
+				std::cout<<errorM<<std::endl;
+				}
+		 }
+	 close_connection(DB);
+	}
+	
 /*int main(int argc, char** argv) 
 { 
     //save_water_db(9);
     //std::string date = db_manager::get_current_time();
     //std::cout<<db_manager::get_water_current_date_db()<<std::endl;
-    float g = 1;
-    //db_manager::update_water_db(g);
+    //float g = 1;
+    std::string date = std::string("2018-11-15");
+    water_object w(0,date,0);
+    db_manager::set_is_sync(w);
+    
 	std::list<water_object> list = db_manager::get_all_water();
 	 for(auto it = list.begin(); it != list.end(); ++it) {
 			water_object w = *it;
 			std::cout<<"Water amount"<<w.get_water_amount()<<std::endl;
-		 }
-    return (0); 
-}*/
+		 }*/
+    //return (0); 
+//}
